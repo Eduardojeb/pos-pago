@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pago por transferencia</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#f6f7fb; }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 18px; }
+    .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    .label { color:#667085; font-size: 13px; margin-top: 12px; }
+    .value { font-size: 18px; font-weight: 700; word-break: break-all; }
+    .btn { margin-top: 14px; width: 100%; border: 0; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; background:#2563eb; color:#fff; }
+    .btn:active { transform: scale(.99); }
+    .note { margin-top: 12px; font-size: 13px; color:#667085; }
+    .ok { margin-top: 10px; color: #16a34a; font-weight: 700; display:none; }
+    .err { margin-top: 10px; color: #dc2626; font-weight: 700; display:none; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    #concepto { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Transferencia</h1>
+
+      <div class="label">CLABE</div>
+      <div id="clabe" class="value mono">—</div>
+
+      <div class="label">Monto</div>
+      <div id="monto" class="value">—</div>
+
+      <div class="label">Concepto</div>
+      <div id="concepto" class="value">—</div>
+
+      <button id="btnCopiar" class="btn">Copiar CLABE</button>
+      <div id="ok" class="ok">✅ CLABE copiada</div>
+      <div id="err" class="err">❌ No se pudo copiar automáticamente</div>
+
+      <div class="note">
+        Si tu banco pide “Concepto”, copia el texto de arriba.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name) || "";
+    }
+
+    function onlyDigits(s) {
+      return (s || "").replace(/\D/g, "");
+    }
+
+    const clabe = onlyDigits(getParam("c"));
+    const montoRaw = getParam("m");
+    const concepto = getParam("t");
+
+    document.getElementById("clabe").textContent = clabe || "CLABE no recibida";
+
+    const montoNum = parseFloat(montoRaw);
+    document.getElementById("monto").textContent =
+      isFinite(montoNum) ? montoNum.toLocaleString("es-MX", { style:"currency", currency:"MXN" }) : "—";
+
+    document.getElementById("concepto").textContent = concepto || "—";
+
+    document.getElementById("btnCopiar").addEventListener("click", async () => {
+      const ok = document.getElementById("ok");
+      const err = document.getElementById("err");
+      ok.style.display = "none";
+      err.style.display = "none";
+
+      try {
+        if (!clabe) throw new Error("No CLABE");
+        await navigator.clipboard.writeText(clabe);
+        ok.style.display = "block";
+      } catch (e) {
+        err.style.display = "block";
+
+        // Fallback iPhone: seleccionar el texto para copiar manual
+        const el = document.getElementById("clabe");
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        alert("No se pudo copiar automáticamente.\n\nSe seleccionó la CLABE: ahora toca 'Copiar'.");
+      }
+    });
+  </script>
+</body>
+</html>
